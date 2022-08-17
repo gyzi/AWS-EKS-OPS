@@ -1,0 +1,147 @@
+#kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.0/deploy/prerequisite/longhorn-iscsi-installation.yaml
+
+#kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.0/examples/storageclass.yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: longhorn
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+parameters:
+  numberOfReplicas: "3"
+  staleReplicaTimeout: "2880" # 48 hours in minutes
+
+##kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.3.0/examples/pod_with_pvc.yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: longhorn-volv-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: default
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      volumes:
+      - name: vol
+        persistentVolumeClaim:
+          claimName: longhorn-volv-pvc
+      containers:
+      - image: nginx:alpine
+        name: nginx
+        command: ["/bin/sh", "-c"]
+        args:
+        - date >> /usr/share/nginx/html/index.html;
+          sleep 1;
+        volumeMounts:
+        - name: vol
+          mountPath: /usr/share/nginx/html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: nginx
+  type: ClusterIP
+---
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: web
+#   namespace: default
+# spec:
+#   selector:
+#     matchLabels:
+#       app: nginx # has to match .spec.template.metadata.labels
+#   serviceName: "nginx"
+#   replicas: 2 # by default is 1
+#   template:
+#     metadata:
+#       labels:
+#         app: nginx # has to match .spec.selector.matchLabels
+#     spec:
+#       restartPolicy: Always
+#       terminationGracePeriodSeconds: 10
+#       containers:
+#       - name: nginx
+#         image: k8s.gcr.io/nginx-slim:0.8
+#         livenessProbe:
+#           exec:
+#             command:
+#               - ls
+#               - /usr/share/nginx/html/lost+found
+#           initialDelaySeconds: 5
+#           periodSeconds: 5
+#         ports:
+#         - containerPort: 80
+#           name: web
+#         volumeMounts:
+#         - name: www
+#           mountPath: /usr/share/nginx/html
+#   volumeClaimTemplates:
+#   - metadata:
+#       name: www
+#     spec:
+#       accessModes: [ "ReadWriteOnce" ]
+#       storageClassName: "longhorn"
+#       resources:
+#         requests:
+#           storage: 1Gi
+# ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: longhorn-ingress
+  namespace: longhorn-system
+  annotations:
+    # type of authentication
+    nginx.ingress.kubernetes.io/auth-type: basic
+    # prevent the controller from redirecting (308) to HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+    # name of the secret that contains the user/password definitions
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    # message to display with an appropriate context why the authentication is required
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required '
+    # custom max body size for file uploading like backing image uploading
+    nginx.ingress.kubernetes.io/proxy-body-size: 10000m
+spec:
+  rules:
+  - host: "longhorn.staytus.com"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: longhorn-frontend
+            port:
+              number: 80
