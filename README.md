@@ -1,26 +1,11 @@
 # AWS EKS Ops
-**EKS Launch Cluster**
-***eks-terraform***
-- Create file name terraform.tfvars and add/update the required enteries specifing region, bucket and cdn info, 
-  for example from same path  ``` cat > terraform.tfvars ``` for examples  
-```
-region = "us-east-1"
-vpc-name = "eks-main"
-env-name = "staging"
-instance-type = "t3.small"
-cluster-name = "eks-testing"
-eks-role = "eks-admin"
-eks-policy = "allow-eks-access"
-eks-group = "myeks-group"
-developers = "developers"
-```
-- Initialize providers and validate and apply resources files 
-```
-terraform init   
-terraform fmt && terraform validate 
-```
+
+**eks-terraform**
+
+- [Ref to eks-terraform] (eks-terraform/README.md) To Launch EKS Cluster Initialize providers, validate and apply resources files 
+
 **ServiceMesh - Istio**
-*** https://istio.io/latest/docs/setup/getting-started/ ***
+***https://istio.io/latest/docs/setup/getting-started/***
 
 1. Installing istio 1.14.3  **you can replace PWD with the prefered path for istio location
 ``` 
@@ -48,8 +33,7 @@ kubectl delete namespace istio-system
 ```
 **GitOps - ArgoCD**
 ***Getting Started***
-#https://argo-cd.readthedocs.io/en/stable/getting_started/
-
+[ArgoCD Doc](https://argo-cd.readthedocs.io/en/stable/getting_started/)
 1. Install ArgoCD 
 ``` 
 kubectl create namespace argocd
@@ -79,7 +63,6 @@ chmod +x /usr/local/bin/terraform
 terraform --version
 ```
 2. Installing kubectl && eksctl 
-
 3. Installing helm ***specfied helm 3.6.0 instead of latest - compatibility issues ***
    <url>https://github.com/helm/helm/releases<url> 
 ```
@@ -87,11 +70,7 @@ curl -o helm-3.tar.gz https://get.helm.sh/helm-v3.6.0-darwin-amd64.tar.gz \
 && tar -xf helm-3.tar.gz \
 mv darwin-amd64/helm /usr/local/bin/helm \
 ```
-
-4. Configuring Cert-Manager
-```
-
-```
+4. Configuring Cert-Manager ``` ```
 
 *** https://portainer.github.io/k8s/charts/portainer/ ***
 
@@ -101,7 +80,6 @@ mv darwin-amd64/helm /usr/local/bin/helm \
  && helm repo update
  && helm upgrade -i -n portainer portainer portainer/portainer
 ```
-
 2. Edit svc to ClusterIP Validate and add gw/vs  
 ```
 kubectl edit svc -n portainer portainer
